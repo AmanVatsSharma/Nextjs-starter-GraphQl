@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+generator pothos {
+  provider     = "prisma-pothos-types"
+  clientOutput = "./generated/client"
+  output       = "../generated/pothos-types.ts"
+}
+
+generator pothosCrud {
+  provider    = "prisma-generator-pothos-codegen"
+  output      = "../generated"
+  inputs      = "../generated/inputs.ts"
+  objects     = "../generated/objects.ts"
+  autocrud    = "../generated/autocrud.ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     Float?
+  avatar    String?
+  bio       String?
+  isActive  Boolean  @default(true)
+  role      Role     @default(USER)
+  posts     Post[]
+  comments  Comment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Post {
+  id          String    @id @default(uuid())
+  title       String
+  content     String?
+  published   Boolean   @default(false)
+  slug        String    @unique
+  views       Int       @default(0)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  tags        Tag[]     @relation("PostTags")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  postId    String
+  authorId  String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  color String @default("#3B82F6")
+  posts Post[] @relation("PostTags")
+
+  @@map("tags")
+}
+
+model Category {
+  id          String @id @default(uuid())
+  name        String @unique
+  description String?
+  color       String @default("#10B981")
+
+  @@map("categories")
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
